@@ -3,17 +3,15 @@ name: Create Release PR
 on:
   workflow_dispatch:
     inputs:
-      bump_type:
-        description: "Version bump type"
-        type: choice
-        default: skip
-        options: [skip, patch, minor, major]
+      version:
+        description: "New version (e.g., 2026.3.17)"
+        type: string
+        required: true
 
 permissions: {}
 
 jobs:
   create-release-pr:
-    if: github.event.inputs.bump_type != 'skip'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -34,7 +32,7 @@ jobs:
 
       - name: Bump version
         id: release
-        run: node scripts/bump-version.js ${{ inputs.bump_type }}
+        run: node scripts/bump-version.js ${{ inputs.version }}
 
       - name: Configure git
         run: |
