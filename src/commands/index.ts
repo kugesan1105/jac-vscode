@@ -91,4 +91,41 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
             await inspectTokenScopesHandler(context);
         })
     );
+
+    // Lintfix Format: send jac/lintfixFormat request to LSP, apply returned edits
+    context.subscriptions.push(
+        vscode.commands.registerCommand(COMMANDS.LINTFIX_FORMAT, async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.document.languageId !== 'jac') {
+                return;
+            }
+            const diagnostics = vscode.languages.getDiagnostics(editor.document.uri);
+            const hasErrors = diagnostics.some(d => d.severity === vscode.DiagnosticSeverity.Error);
+            if (hasErrors) {
+                vscode.window.showErrorMessage('Lintfix did not run: fix syntax errors in the file first.');
+                return;
+            }
+            const client = getLspManager()?.getClient();
+            if (!client) {
+                vscode.window.showErrorMessage('Jac Language Server is not running.');
+                return;
+            }
+            const edits = await client.sendRequest<vscode.TextEdit[]>('jac/lintfixFormat', {
+                textDocument: { uri: editor.document.uri.toString() }
+            });
+            if (edits && edits.length > 0) {
+                const wsEdit = new vscode.WorkspaceEdit();
+                wsEdit.set(editor.document.uri, edits.map(e =>
+                    new vscode.TextEdit(
+                        new vscode.Range(
+                            new vscode.Position(e.range.start.line, e.range.start.character),
+                            new vscode.Position(e.range.end.line, e.range.end.character)
+                        ),
+                        e.newText
+                    )
+                ));
+                await vscode.workspace.applyEdit(wsEdit);
+            }
+        })
+    );
 }
