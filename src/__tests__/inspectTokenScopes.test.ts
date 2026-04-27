@@ -39,6 +39,7 @@ const keywordEscContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'keyword_esc
 const semErrContent       = fs.readFileSync(path.join(EXAMPLES_DIR, 'sem_err.jac'), 'utf-8');
 const accessModContent    = fs.readFileSync(path.join(EXAMPLES_DIR, 'access_modifiers.jac'), 'utf-8');
 const lambdaFstringContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'lambda_fstring.jac'), 'utf-8');
+const overrideFnContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'override_fn.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -1007,7 +1008,7 @@ describe('access_modifiers.jac', () => {
 });
 
 // ---------------------------------------------------------------------------
-// check_17_lambda_fstring.jac  — lambda must not exit at '{' inside f-string
+// lambda_fstring.jac  — lambda must not exit at '{' inside f-string
 // ---------------------------------------------------------------------------
 describe('lambda_fstring.jac', () => {
     let result: TokenizeResult;
@@ -1060,5 +1061,31 @@ describe('lambda_fstring.jac', () => {
         test('comma separating lambda arg from items (col 35-36)', () => {
             expectToken(result, 24, 35, 36, ',', ['source.jac', 'punctuation.separator.arguments.jac']);
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// override_fn.jac — function names after override get entity.name.function
+// ---------------------------------------------------------------------------
+describe('override_fn.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(overrideFnContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('area function name after override can gets entity.name.function.jac (line 10)', () => {
+        // line 10: "    override can area() -> float {"
+        expectToken(result, 10, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+    });
+
+    test('perimeter function name after override can gets entity.name.function.jac (line 14)', () => {
+        // line 14: "    override can perimeter() -> float {"
+        expectToken(result, 14, 18, 27, 'perimeter', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+    });
+
+    test('area function name after override can gets entity.name.function.jac (line 23)', () => {
+        // line 23: "    override can area() -> float {"
+        expectToken(result, 23, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
     });
 });
